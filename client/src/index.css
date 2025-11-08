@@ -1,0 +1,25 @@
+body {
+  margin: 0;
+  background: #0e0e16;
+  color: white;
+  font-family: 'Poppins', sans-serif;
+}
+
+button {
+  background: linear-gradient(135deg, #7f5eff, #5a3aff);
+  border: none;
+  padding: 12px 24px;
+  margin-top: 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  box-shadow: 0 0 15px #7f5effaa;
+  transition: 0.2s ease-in-out;
+}
+
+button:hover {
+  box-shadow: 0 0 25px #7f5effdd;
+  transform: translateY(-3px);
+}
