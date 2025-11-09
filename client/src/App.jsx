@@ -1,9 +1,18 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Home from "./pages/Home";
 import Room from "./pages/Room";
 import Play from "./pages/Play";
+
+function RequireAuth({ children }){
+  const location = useLocation();
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  if (!token) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+  return children;
+}
 
 function ProfilePage(){
   return (
@@ -53,15 +62,19 @@ function LeaderboardPage(){
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Login />} />
+      <Route path="/" element={<Home />} />
+      <Route path="/home" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
-      <Route path="/home" element={<Home />} />
-      <Route path="/play" element={<Play />} />
-      <Route path="/room/:id" element={<Room />} />
-      <Route path="/profile" element={<ProfilePage />} />
-      <Route path="/achievements" element={<AchievementsPage />} />
-      <Route path="/leaderboard" element={<LeaderboardPage />} />
+
+      <Route path="/play" element={<RequireAuth><Play /></RequireAuth>} />
+      <Route path="/room/:id" element={<RequireAuth><Room /></RequireAuth>} />
+
+      <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
+      <Route path="/achievements" element={<RequireAuth><AchievementsPage /></RequireAuth>} />
+      <Route path="/leaderboard" element={<RequireAuth><LeaderboardPage /></RequireAuth>} />
+
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

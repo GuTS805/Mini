@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { io } from "socket.io-client";
 
 const SOCKET_URL = "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function Play() {
   const navigate = useNavigate();
@@ -11,6 +12,8 @@ export default function Play() {
   const [socket, setSocket] = useState(null);
   const [pendingQueue, setPendingQueue] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [me, setMe] = useState(null);
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
   useEffect(() => {
     const s = io(SOCKET_URL, { transports: ["websocket"], reconnectionAttempts: 5, timeout: 5000 });
@@ -49,6 +52,15 @@ export default function Play() {
     };
   }, [navigate]);
 
+  // fetch Tier (rank/points)
+  useEffect(() => {
+    if (!token) return;
+    fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => d && setMe(d))
+      .catch(() => {});
+  }, [token]);
+
   const joinRoom = () => {
     if (!roomCode.trim()) return;
     navigate(`/room/${roomCode.trim().toUpperCase()}`);
@@ -82,6 +94,9 @@ export default function Play() {
       <div className="topbar" style={{ position: "absolute", top: 0, left: 0, right: 0 }}>
         <div className="brand"><span className="dot" /> MINDMASH</div>
         <div className="navlinks">
+          {me && (
+            <div className="pill">Tier <span className="value">{me.rank}</span> • <span className="value">{me.points}</span> pts</div>
+          )}
           <Link className="navlink" to="/profile">Profile</Link>
           <Link className="navlink" to="/achievements">Achievements</Link>
           <Link className="navlink" to="/leaderboard">Leaderboard</Link>
