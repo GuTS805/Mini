@@ -17,7 +17,8 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(cors({ origin: "*", methods: ["GET", "POST"] }));
 app.use(express.json());
-app.get("/", (req, res) => {
+// Health/status endpoint
+app.get("/status", (req, res) => {
   res.json({ ok: true, service: "Mindmash API", time: new Date().toISOString() });
 });
 
@@ -260,10 +261,12 @@ app.post("/match/win", auth, async (req,res)=>{
 });
 
 const PORT = process.env.PORT || 5000;
-// Serve React build (after APIs)
-app.use(express.static(path.join(__dirname, "../client/dist")));
-app.get("/*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../client/dist/index.html"));
+// Serve React build (after APIs). Use middleware instead of path pattern to avoid path-to-regexp issues on Express v5
+const clientDist = path.resolve(__dirname, "../client/dist");
+app.use(express.static(clientDist));
+app.use((req, res, next) => {
+  if (req.method !== "GET") return next();
+  res.sendFile(path.join(clientDist, "index.html"));
 });
 
 httpServer.listen(PORT, ()=>console.log(`✅ Backend on http://localhost:${PORT}`));
