@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import Editor from "@monaco-editor/react";
@@ -11,7 +11,9 @@ const languageMap = { javascript:63, python:71, cpp:54, c:50, java:62 };
 
 export default function Room() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [socket, setSocket] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const [language, setLanguage] = useState("javascript");
   const [code, setCode] = useState(`// Implement solve(n) and return the answer\nfunction solve(n){\n  if(n===0) return 1;\n  return n*solve(n-1);\n}`);
@@ -80,10 +82,21 @@ export default function Room() {
     <div className="arena">
       <header className="nav">
         <div className="brand"><span className="dot" /> MINDMASH</div>
-        <div className="stats">
-          <div className="pill"><span className="label">ROOM</span><span className="value">#{id?.toUpperCase()}</span></div>
-          <div className={`pill ${opponent ? "ok":"warn"}`}><span className="label">OPPONENT</span><span className="value">{opponent?"JOINED":"WAITING..."}</span></div>
-          <div className="pill"><span className="label">MODE</span><span className="value">1v1</span></div>
+        <div className="right">
+          <div className="stats">
+            <div className="pill"><span className="label">ROOM</span><span className="value">#{id?.toUpperCase()}</span></div>
+            <div className={`pill ${opponent ? "ok":"warn"}`}><span className="label">OPPONENT</span><span className="value">{opponent?"JOINED":"WAITING..."}</span></div>
+            <div className="pill"><span className="label">MODE</span><span className="value">1v1</span></div>
+          </div>
+          <div className="profile">
+            <button className="avatar" onClick={()=>setMenuOpen(v=>!v)}>MM</button>
+            {menuOpen && (
+              <div className="menu">
+                <button onClick={()=>{ navigate('/home'); setMenuOpen(false); }}>Profile</button>
+                <button onClick={()=>{ localStorage.removeItem('token'); navigate('/login'); }}>Logout</button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -139,7 +152,13 @@ export default function Room() {
         .nav{display:flex;justify-content:space-between;padding:14px 22px;border-bottom:1px solid #1c1c2b;}
         .brand{font-weight:700;display:flex;align-items:center;gap:8px;}
         .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent);}
+        .right{display:flex;align-items:center;gap:12px;}
         .stats{display:flex;gap:10px;}
+        .profile{position:relative;}
+        .avatar{width:34px;height:34px;border-radius:50%;border:1px solid #2a2a44;background:#0f0f1a;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:800;box-shadow:0 0 12px rgba(127,94,255,.25)}
+        .menu{position:absolute;right:0;top:42px;background:#141326;border:1px solid #2a2a44;border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,.35);min-width:160px;overflow:hidden;z-index:20}
+        .menu button{width:100%;text-align:left;background:transparent;border:0;color:#ecebf6;padding:10px 12px;cursor:pointer}
+        .menu button:hover{background:#1a1930}
         .pill{background:#11101a;padding:6px 10px;border-radius:6px;font-size:12px;}
         .pill.ok .value{color:var(--good);} .pill.warn .value{color:#ffe27a;}
         .grid{display:grid;grid-template-columns:40% 60%;height:calc(100% - 55px);}
