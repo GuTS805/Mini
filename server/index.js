@@ -10,6 +10,7 @@ import dotenv from "dotenv";
 import User from "./models/User.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -261,12 +262,17 @@ app.post("/match/win", auth, async (req,res)=>{
 });
 
 const PORT = process.env.PORT || 5000;
-// Serve React build (after APIs). Use middleware instead of path pattern to avoid path-to-regexp issues on Express v5
+// Serve React build (after APIs). Mount only if build exists to avoid ENOENT on Render
 const clientDist = path.resolve(__dirname, "../client/dist");
-app.use(express.static(clientDist));
-app.use((req, res, next) => {
-  if (req.method !== "GET") return next();
-  res.sendFile(path.join(clientDist, "index.html"));
-});
+const clientIndex = path.join(clientDist, "index.html");
+if (fs.existsSync(clientIndex)) {
+  app.use(express.static(clientDist));
+  app.use((req, res, next) => {
+    if (req.method !== "GET") return next();
+    res.sendFile(clientIndex);
+  });
+} else {
+  console.warn("[SPA] client/dist not found. Serving API only. Build client or set correct path.");
+}
 
 httpServer.listen(PORT, ()=>console.log(`✅ Backend on http://localhost:${PORT}`));
