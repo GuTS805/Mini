@@ -8,7 +8,11 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import User from "./models/User.js";
+import path from "path";
+import { fileURLToPath } from "url";
 dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors({ origin: "*", methods: ["GET", "POST"] }));
@@ -256,4 +260,10 @@ app.post("/match/win", auth, async (req,res)=>{
 });
 
 const PORT = process.env.PORT || 5000;
+// Serve React build (after APIs)
+app.use(express.static(path.join(__dirname, "../client/dist")));
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../client/dist/index.html"));
+});
+
 httpServer.listen(PORT, ()=>console.log(`✅ Backend on http://localhost:${PORT}`));
