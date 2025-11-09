@@ -2,7 +2,7 @@ import { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+const API_URL = "http://localhost:5000";
 
 export default function Signup() {
     const navigate = useNavigate();
@@ -20,7 +20,7 @@ export default function Signup() {
             });
 
             localStorage.setItem("token", res.data.token);
-            navigate("/home");
+            navigate("/play");
         } catch (err) {
             setError(err.response?.data?.error || "Signup failed");
         }

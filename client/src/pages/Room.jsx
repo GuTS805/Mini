@@ -3,167 +3,137 @@ import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import Editor from "@monaco-editor/react";
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || API_URL;
-const socket = io(SOCKET_URL);
 
-const languageMap = {
-    javascript: 63,
-    python: 71,
-    cpp: 54,
-    c: 50,
-    java: 62,
-};
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
+
+const languageMap = { javascript:63, python:71, cpp:54, c:50, java:62 };
 
 export default function Room() {
-    const { id } = useParams();
-    const [language, setLanguage] = useState("javascript");
-    const [output, setOutput] = useState("Run code to see result...");
-    const [status, setStatus] = useState("");
-    const [opponent, setOpponent] = useState(false);
-    const [time, setTime] = useState(60);
+  const { id } = useParams();
+  const [socket, setSocket] = useState(null);
 
-    const templates = {
-        javascript: `function factorial(n){
-  if(n === 0) return 1;
-  return n * factorial(n - 1);
-}
-console.log(factorial(5));`,
-        python: `def factorial(n):
-    if n == 0:
-        return 1
-    return n * factorial(n - 1)
+  const [language, setLanguage] = useState("javascript");
+  const [code, setCode] = useState(`// Implement solve(n) and return the answer\nfunction solve(n){\n  if(n===0) return 1;\n  return n*solve(n-1);\n}`);
+  const [output, setOutput] = useState("Run code to see result...");
+  const [status, setStatus] = useState(""); // WIN | LOSE | ""
+  const [opponent, setOpponent] = useState(false);
 
-print(factorial(5))`,
-        cpp: `#include <bits/stdc++.h>
-using namespace std;
-long long factorial(long long n){
-    if(n==0) return 1;
-    return n*factorial(n-1);
-}
-int main(){ cout<<factorial(5); }`,
-        c: `#include <stdio.h>
-long long factorial(long long n){
-    if(n==0) return 1;
-    return n*factorial(n-1);
-}
-int main(){ printf("%lld", factorial(5)); return 0; }`,
-        java: `class Main{
-    static long factorial(long n){
-        if(n==0) return 1;
-        return n*factorial(n-1);
-    }
-    public static void main(String[] args){
-        System.out.println(factorial(5));
-    }
-}`
-    };
+  // Auto-hide WIN/LOSE banner after 5 seconds
+  useEffect(() => {
+    if (!status) return;
+    const t = setTimeout(() => setStatus(""), 5000);
+    return () => clearTimeout(t);
+  }, [status]);
 
-    const [code, setCode] = useState(templates.javascript);
+  // problem from matchmaking or fallback
+  const stored = sessionStorage.getItem("MM_PROBLEM");
+  const fallback = { title:"Factorial of 5", description:"Return factorial(5).", expectedOutput:"120" };
+  const [problem] = useState(stored ? JSON.parse(stored) : fallback);
 
-    useEffect(() => {
-        setCode(templates[language]);
-        setOutput("Run code to see result...");
-    }, [language]);
+  useEffect(() => {
+    const s = io(SOCKET_URL);
+    setSocket(s);
+    s.emit("join_room", id);
+    s.on("player_joined", ()=> setOpponent(true));
+    s.on("opponent_won", ()=> setStatus("LOSE"));
+    s.on("winner_confirmed", ()=> setStatus("WIN"));
+    return ()=> { s.close(); };
+  }, [id]);
 
-    useEffect(() => {
-        socket.emit("join_room", id);
-        socket.on("player_joined", () => setOpponent(true));
-        socket.on("opponent_won", () => setStatus("LOSE"));
-        socket.on("winner_confirmed", () => setStatus("WIN"));
-        return () => {
-            socket.off("player_joined");
-            socket.off("opponent_won");
-            socket.off("winner_confirmed");
-        };
-    }, [id]);
+  const runCode = async () => {
+    try {
+      const langId = languageMap[language];
+      // Use test runner for JS/Python
+      if (language === "javascript" || language === "python") {
+        const r = await axios.post(`${API_URL}/runProblem`, {
+          code,
+          language_id: langId,
+          problemId: "factorial-5",
+        }, { headers:{ "Content-Type":"application/json" } });
 
-    useEffect(() => {
-        if (status) return;
-        const t = setInterval(() => setTime((t) => (t > 0 ? t - 1 : 0)), 1000);
-        return () => clearInterval(t);
-    }, [status]);
-
-    useEffect(() => {
-        if (time === 0 && !status) setStatus("LOSE");
-    }, [time]);
-
-    const runCode = async () => {
-        try {
-            const res = await axios.post(`${API_URL}/run`,
-                { code, language_id: languageMap[language] },
-                { headers: { "Content-Type": "application/json" } }
-            );
-            const result = (res.data.output || "").trim();
-            setOutput(result || "No Output");
-            if (result === "120") socket.emit("win_attempt", { roomId: id });
-        } catch {
-            setOutput("⚠ Server Execution Error");
+        if (r.data?.error) {
+          setOutput(`Error: ${r.data.error}`);
+          return;
         }
-    };
 
-    return (
-        <div className="arena">
+        const { passed, total, results } = r.data;
+        const lines = (results || []).map(x => `${x.pass ? "✅" : "❌"} input=${x.input} expected=${x.expected} got=${x.got}`).join("\n");
+        setOutput(`Tests passed ${passed}/${total}\n${lines}`);
+        if (passed === total) socket?.emit("win_attempt", { roomId:id });
+        return;
+      }
 
-            <div className={`timer ${time <= 10 ? "danger" : ""}`}>⏱ {time}s</div>
+      // Fallback: raw run for other languages
+      const res = await axios.post(`${API_URL}/run`, {
+        code, language_id: langId
+      }, { headers:{ "Content-Type":"application/json" } });
+      const result = (res.data.output || "").trim();
+      setOutput(result || "No Output");
+      if (result === String(problem.expectedOutput)) socket?.emit("win_attempt", { roomId:id });
+    } catch (e) {
+      setOutput("⚠ Server Execution Error");
+    }
+  };
 
-            <header className="nav">
-                <div className="brand">
-                    <span className="dot" /> MINDMASH
-                </div>
-                <div className="stats">
-                    <div className="pill"><span className="label">ROOM</span><span className="value">#{id?.toUpperCase()}</span></div>
-                    <div className={`pill ${opponent ? "ok" : "warn"}`}><span className="label">OPPONENT</span><span className="value">{opponent ? "JOINED" : "WAITING..."}</span></div>
-                    <div className="pill"><span className="label">MODE</span><span className="value">1v1</span></div>
-                </div>
-            </header>
+  return (
+    <div className="arena">
+      <header className="nav">
+        <div className="brand"><span className="dot" /> MINDMASH</div>
+        <div className="stats">
+          <div className="pill"><span className="label">ROOM</span><span className="value">#{id?.toUpperCase()}</span></div>
+          <div className={`pill ${opponent ? "ok":"warn"}`}><span className="label">OPPONENT</span><span className="value">{opponent?"JOINED":"WAITING..."}</span></div>
+          <div className="pill"><span className="label">MODE</span><span className="value">1v1</span></div>
+        </div>
+      </header>
 
-            <main className="grid">
-                <section className="left">
-                    <div className="card">
-                        <h2>⚔ Tournament Problem</h2>
-                        <p><b>Task:</b> Return <code>factorial(5)</code>.</p>
-                        <div className="lang">
-                            <select value={language} onChange={(e) => setLanguage(e.target.value)}>
-                                <option value="javascript">JavaScript</option>
-                                <option value="python">Python</option>
-                                <option value="cpp">C++</option>
-                                <option value="c">C</option>
-                                <option value="java">Java</option>
-                            </select>
-                            <button className="btn-run" onClick={runCode}>▶ Run Code</button>
-                        </div>
-                    </div>
-                    <div className="card">
-                        <div className="card-head">Output</div>
-                        <pre className="console">{output}</pre>
-                    </div>
-                </section>
+      <main className="grid">
+        <section className="left">
+          <div className="card">
+            <h2>⚔ {problem.title}</h2>
+            <p style={{opacity:.85}}>{problem.description}</p>
 
-                <section className="right">
-                    <div className="editor-wrap">
-                        <Editor height="100%" theme="vs-dark" language={language} value={code}
-                            onChange={(v) => setCode(v ?? "")} options={{ minimap: { enabled: false } }} />
-                    </div>
-                </section>
-            </main>
+            <div style={{display:"flex",gap:8,marginTop:12}}>
+              <select value={language} onChange={(e)=>setLanguage(e.target.value)}
+                style={{background:"#0e0e18",color:"#fff",border:"1px solid #2a2845",padding:"8px 10px",borderRadius:6}}>
+                <option value="javascript">JavaScript</option>
+                <option value="python">Python</option>
+                <option value="cpp">C++</option>
+                <option value="c">C</option>
+                <option value="java">Java</option>
+              </select>
+              <button className="btn-run" onClick={runCode}>▶ Run Code</button>
+            </div>
+          </div>
 
-            {status && (
-                <div className={`banner ${status === "WIN" ? "win" : "lose"}`}>
-                    {status === "WIN" ? "🏆 YOU WIN!" : "❌ YOU LOSE!"}
-                </div>
-            )}
+          <div className="card">
+            <div className="card-head">Output</div>
+            <pre className="console">{output}</pre>
+          </div>
+        </section>
 
-            <style>{`
-        :root{
-          --bg:#0b0b12;
-          --panel:#0f0f1a;
-          --ink:#ecebf6;
-          --muted:#9da0b8;
-          --accent:#7f5eff;
-          --good:#58ff9b;
-          --bad:#ff6b6b;
-        }
+        <section className="right">
+          <div className="editor-wrap">
+            <Editor
+              height="100%"
+              theme="vs-dark"
+              language={language}
+              value={code}
+              onChange={(v)=>setCode(v ?? "")}
+              options={{ minimap:{enabled:false}, fontSize:15 }}
+            />
+          </div>
+        </section>
+      </main>
+
+      {status && (
+        <div className={`banner ${status==="WIN"?"win":"lose"}`}>
+          {status==="WIN" ? "🏆 YOU WIN!" : "❌ YOU LOSE!"}
+        </div>
+      )}
+
+      <style>{`
+        :root{ --bg:#0b0b12; --panel:#0f0f1a; --ink:#ecebf6; --muted:#9da0b8; --accent:#7f5eff; --good:#58ff9b; --bad:#ff6b6b; }
         *{margin:0;padding:0;box-sizing:border-box;}
         body,html,#root,.arena{height:100%;background:var(--bg);color:var(--ink);font-family:Inter, sans-serif;}
         .nav{display:flex;justify-content:space-between;padding:14px 22px;border-bottom:1px solid #1c1c2b;}
@@ -171,20 +141,17 @@ int main(){ printf("%lld", factorial(5)); return 0; }`,
         .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent);}
         .stats{display:flex;gap:10px;}
         .pill{background:#11101a;padding:6px 10px;border-radius:6px;font-size:12px;}
-        .pill.ok .value{color:var(--good);}
-        .pill.warn .value{color:#ffe27a;}
+        .pill.ok .value{color:var(--good);} .pill.warn .value{color:#ffe27a;}
         .grid{display:grid;grid-template-columns:40% 60%;height:calc(100% - 55px);}
         .left,.right{padding:14px;}
-        .card{background:var(--panel);padding:14px;border-radius:8px;margin-bottom:14px;}
-        .console{min-height:120px;background:#0a0a12;padding:10px;border-radius:8px;overflow:auto;}
-        .editor-wrap{height:100%;background:#0c0c16;border-radius:8px;}
-        .btn-run{background:var(--accent);border:none;padding:8px 16px;color:white;font-weight:700;border-radius:6px;cursor:pointer;}
-        .timer{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:#111;border-radius:8px;padding:6px 16px;border:1px solid #333;}
-        .timer.danger{color:var(--bad);text-shadow:0 0 10px var(--bad);}
-        .banner{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;justify-content:center;align-items:center;font-size:64px;font-weight:900;background:rgba(0,0,0,0.55);}
-        .banner.win{color:var(--good);}
-        .banner.lose{color:var(--bad);}
+        .card{background:var(--panel);padding:14px;border-radius:8px;margin-bottom:14px;border:1px solid #23233a;}
+        .btn-run{padding:10px 14px;background:var(--accent);border:none;color:#fff;border-radius:6px;cursor:pointer;font-weight:800;}
+        .console{min-height:120px;background:#0a0a12;padding:10px;border-radius:8px;overflow:auto;border:1px solid #202038;}
+        .editor-wrap{height:100%;background:#0c0c16;border-radius:8px;border:1px solid #1e1e2f;}
+        .banner{position:fixed;inset:0;display:flex;justify-content:center;align-items:center;font-size:64px;font-weight:900;background:rgba(0,0,0,0.55)}
+        .banner.win{color:var(--good);} .banner.lose{color:var(--bad);}
+        @media(max-width:1024px){ .grid{ grid-template-columns:1fr; } .editor-wrap{ height:55vh; } }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 }

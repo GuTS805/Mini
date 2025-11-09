@@ -8,6 +8,9 @@ dist/
 .out/
 .next/
 .vercel/
+coverage/
+tmp/
+temp/
 
 # Logs
 npm-debug.log*
@@ -16,15 +19,20 @@ yarn-error.log*
 pnpm-debug.log*
 *.log
 
-# Env files
+# Env files (Do NOT push secrets)
 .env
-**/.env
-server/.env
-client/.env
 .env.*
+**/*.env
 
-# OS / IDE
+# OS / IDE files
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+*.swp
+
+# Local databases or json data
+*.local
+*.db
+*.sqlite
+*.sqlite3
