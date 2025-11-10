@@ -373,7 +373,7 @@ app.post("/auth/signup", async (req,res)=>{
   if(await User.findOne({username})) return res.status(409).json({error:"Username taken"});
   const hash = await bcrypt.hash(password,10);
   const user = await User.create({ username,email,password:hash, rating:1200, wins:0, losses:0 });
-  const token = jwt.sign({ id:user._id, username:user.username }, JWT_SECRET, { expiresIn:"7d" });
+  const token = jwt.sign({ id:user._id, username:user.username }, JWT_SECRET, { expiresIn:"1d" });
   res.json({ token, user: { username:user.username, rating:user.rating, wins:user.wins, losses:user.losses } });
 });
 
@@ -383,7 +383,7 @@ app.post("/auth/login", async (req,res)=>{
   if(!user) return res.status(404).json({error:"User not found"});
   const ok = await bcrypt.compare(password, user.password);
   if(!ok) return res.status(401).json({error:"Wrong password"});
-  const token = jwt.sign({ id:user._id, username:user.username }, JWT_SECRET, { expiresIn:"7d" });
+  const token = jwt.sign({ id:user._id, username:user.username }, JWT_SECRET, { expiresIn:"1d" });
   res.json({ token, user: { username:user.username, rating:user.rating, wins:user.wins, losses:user.losses } });
 });
 

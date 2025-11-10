@@ -21,24 +21,25 @@ export default function Login() {
   };
 
   return (
-    <div className="login-page">
+    <div className="login-screen">
 
-      {/* Center Card */}
       <div className="login-card">
-        <div className="logo-circle">⚡</div>
+        <div className="neon-orb">⚡</div>
 
         <h2>Welcome Back</h2>
-        <p className="sub">Don't have an account? <Link to="/signup">Sign up</Link></p>
+        <p className="subtext">
+          Don't have an account? <Link to="/signup">Sign up</Link>
+        </p>
 
         {error && <p className="error">{error}</p>}
 
-        <div className="input-field">
-          <input type="email" onChange={(e) => setEmail(e.target.value)} required />
+        <div className="field">
+          <input type="email" required onChange={(e) => setEmail(e.target.value)} />
           <label>Email Address</label>
         </div>
 
-        <div className="input-field">
-          <input type="password" onChange={(e) => setPassword(e.target.value)} required />
+        <div className="field">
+          <input type="password" required onChange={(e) => setPassword(e.target.value)} />
           <label>Password</label>
         </div>
 
@@ -46,137 +47,145 @@ export default function Login() {
           Login
         </button>
 
-        <div className="split"><span>OR</span></div>
+        <div className="divider">OR</div>
 
-        <div className="oauth-btns">
-          <button className="o-btn"></button>
-          <button className="o-btn">G</button>
-          <button className="o-btn">✖</button>
+        <div className="oauth-row">
+          <button></button>
+          <button>G</button>
+          <button>✖</button>
         </div>
       </div>
 
-      {/* Background Wires */}
-      <div className="wire w1" />
-      <div className="wire w2" />
-      <div className="wire w3" />
-      <div className="wire w4" />
-
       <style>{`
-        .login-page {
+        .login-screen {
           height: 100vh;
-          background: #000;
+          width: 100%;
+          background:
+            linear-gradient(180deg, rgba(3, 7, 18, 0.82), rgba(3, 7, 18, 0.82)),
+            url("/assets/login-tech-bg.jpg") center/cover no-repeat;
+          background-attachment: fixed;
           display: flex;
           justify-content: center;
           align-items: center;
           position: relative;
-          font-family: Inter, sans-serif;
+          backdrop-filter: blur(2px);
+          animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
 
         .login-card {
-          background: #0b0b0f;
-          padding: 40px 50px;
-          border-radius: 12px;
-          width: 350px;
+          width: 370px;
+          background: rgba(10, 10, 18, 0.75);
+          backdrop-filter: blur(14px);
+          border: 1px solid rgba(155, 80, 255, 0.35);
+          border-radius: 14px;
+          padding: 40px;
           text-align: center;
-          border: 1px solid #1a1a22;
-          box-shadow: 0 0 40px rgba(127,94,255,0.2);
-          position: relative;
-          z-index: 5;
+          box-shadow: 0 0 25px rgba(155, 80, 255, 0.45);
+          animation: pop 0.4s ease-out;
         }
 
-        .logo-circle {
-          width: 60px;
-          height: 60px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #7f5eff, #4b32d3);
+        @keyframes pop {
+          from { transform: scale(.94); opacity: .4; }
+          to { transform: scale(1); opacity: 1; }
+        }
+
+        .neon-orb {
+          width: 70px;
+          height: 70px;
           display: flex;
-          align-items: center;
           justify-content: center;
-          margin: 0 auto 14px;
-          font-size: 24px;
+          align-items: center;
+          border-radius: 50%;
+          margin: 0 auto 12px;
+          font-size: 26px;
           color: white;
+          background: radial-gradient(circle, #9f6bff, #5a22f1);
+          box-shadow: 0 0 45px #7f5eff;
         }
 
-        h2 { color: white; margin-bottom: 6px; }
-        .sub { color: #787a91; font-size: 14px; margin-bottom: 16px; }
-        .sub a { color: #7f5eff; text-decoration: none; }
+        h2 { color: white; font-size: 24px; margin-bottom: 4px; }
+        .subtext { color: #b8b8d9; font-size: 14px; margin-bottom: 18px; }
+        .subtext a { color: #9f6bff; text-decoration: none; }
 
-        .error { color: #ff5f5f; margin-bottom: 10px; font-size: 14px; }
+        .error { color: #ff4d6d; margin-bottom: 10px; font-size: 14px; }
 
-        .input-field { position: relative; margin-bottom: 18px; }
-        .input-field input {
+        .field { position: relative; margin-bottom: 18px; }
+        .field input {
           width: 100%;
-          padding: 12px;
-          background: #0f0f16;
-          border: 1px solid #232333;
+          padding: 14px;
+          background: #0b0b14;
+          border: 1px solid #322c5c;
           color: white;
-          outline: none;
           border-radius: 6px;
+          outline: none;
+          transition: border 0.2s;
         }
-        .input-field label {
+        .field input:focus {
+          border-color: #9f6bff;
+        }
+        .field label {
           position: absolute;
-          left: 12px;
+          left: 14px;
           top: 13px;
           font-size: 13px;
-          color: #717296;
-          transition: 0.2s;
+          color: #8a88c2;
+          transition: .22s;
+          pointer-events: none;
         }
-        .input-field input:focus + label,
-        .input-field input:valid + label {
+        .field input:focus + label, .field input:valid + label {
           top: -7px;
           font-size: 11px;
-          color: #7f5eff;
+          color: #c19aff;
         }
 
         .login-btn {
           width: 100%;
-          padding: 12px;
-          background: #7f5eff;
+          padding: 14px;
+          background: linear-gradient(90deg, #8e5bff, #6c37ff);
           border: none;
           border-radius: 6px;
           color: white;
-          cursor: pointer;
-          margin-top: 6px;
+          font-size: 15px;
           font-weight: 600;
-          transition: .2s;
+          cursor: pointer;
+          transition: 0.22s;
+          box-shadow: 0 0 18px rgba(140, 80, 255, .4);
         }
         .login-btn:hover {
-          filter: brightness(1.12);
           transform: translateY(-2px);
+          filter: brightness(1.12);
         }
 
-        .split {
-          margin: 14px 0;
-          color: #555;
-          font-size: 13px;
+        .divider {
+          margin: 16px 0;
+          font-size: 12px;
+          color: #999;
         }
-        .split span { background: #0b0b0f; padding: 0 8px; }
 
-        .oauth-btns {
+        .oauth-row {
           display: flex;
           justify-content: center;
-          gap: 10px;
+          gap: 12px;
         }
-        .o-btn {
-          width: 38px;
-          height: 38px;
+        .oauth-row button {
+          width: 40px;
+          height: 40px;
           border-radius: 6px;
-          border: 1px solid #2f2f42;
-          background: #111118;
+          border: 1px solid #3f3963;
+          background: rgba(20,20,35,.8);
           color: white;
           cursor: pointer;
+          transition: 0.2s;
         }
-
-        .wire {
-          width: 200px;
-          height: 1.5px;
-          background: #181821;
-          position: absolute;
+        .oauth-row button:hover {
+          border-color: #9f6bff;
+          box-shadow: 0 0 12px #9f6bff;
         }
-        .w1 { top: 35%; left: 12%; }
-        .w2 { top: 35%; right: 12%; }
-        .w3 { bottom: 35%; left: 12%; }
-        .w4 { bottom: 35%; right: 12%; }
       `}</style>
     </div>
   );

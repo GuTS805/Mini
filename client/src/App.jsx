@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -44,8 +44,9 @@ function RequireAuth({ children }){
 function ProfilePage(){
   const [me, setMe] = useState(null);
   const [err, setErr] = useState("");
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
   useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     if (!token) return;
     fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.ok ? r.json() : Promise.reject(r))
@@ -54,24 +55,40 @@ function ProfilePage(){
         try { const t = await e.text(); setErr(t || 'Failed to load profile'); }
         catch { setErr('Failed to load profile'); }
       });
-  }, []);
+  }, [token]);
+
   return (
-    <div className="screen page">
-      <div className="card glass" style={{ maxWidth: 720 }}>
-        <h2 style={{ marginTop: 0 }}>Profile</h2>
-        <div className="stack-12">
-          {me ? (
-            <>
-              <div className="pill">Username <span className="value">{me.username}</span></div>
-              <div className="pill">Rank <span className="value">{me.rank}</span></div>
-              <div className="pill">Points <span className="value">{me.points}</span></div>
-              <div className="pill">Rating <span className="value">{me.rating}</span></div>
-              <div className="pill">Wins <span className="value">{me.wins}</span></div>
-              <div className="pill">Losses <span className="value">{me.losses}</span></div>
-            </>
-          ) : (
-            <div style={{ opacity: .8 }}>{err || 'Loading...'}</div>
+    <div className="screen page" style={{ position: 'relative' }}>
+      <div className="topbar" style={{ position: 'absolute', top: 0, left: 0, right: 0 }}>
+        <div className="brand"><span className="dot" /> MINDMASH</div>
+        <div className="navlinks">
+          {token && me && (
+            <div className="pill">Tier <span className="value">{me.rank}</span> • <span className="value">{me.points}</span> pts</div>
           )}
+          <Link className="navlink" to="/home">Home</Link>
+          <Link className="navlink" to="/achievements">Achievements</Link>
+          <Link className="navlink" to="/leaderboard">Leaderboard</Link>
+        </div>
+      </div>
+
+      <div className="center-col" style={{ width: '100%' }}>
+        <div className="card glass" style={{ width: 'min(720px, 96%)' }}>
+          <div className="h-hero title-hero" style={{ marginTop: 0, marginBottom: 6 }}>Profile</div>
+          <div className="h-sub" style={{ marginBottom: 16 }}>Your arena identity</div>
+          <div className="stack-12">
+            {me ? (
+              <>
+                <div className="pill">Username <span className="value">{me.username}</span></div>
+                <div className="pill">Rank <span className="value">{me.rank}</span></div>
+                <div className="pill">Points <span className="value">{me.points}</span></div>
+                <div className="pill">Rating <span className="value">{me.rating}</span></div>
+                <div className="pill">Wins <span className="value">{me.wins}</span></div>
+                <div className="pill">Losses <span className="value">{me.losses}</span></div>
+              </>
+            ) : (
+              <div style={{ opacity: .8 }}>{err || 'Loading...'}</div>
+            )}
+          </div>
         </div>
       </div>
     </div>
