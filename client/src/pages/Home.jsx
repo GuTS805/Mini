@@ -30,7 +30,7 @@ export default function Home() {
       <div className="center-col">
         <div className="h-hero title-hero glow float">Mindmash</div>
         <div className="h-sub">Multiplayer Coding Battle Arena ⚔️</div>
-        <Link to="/play" className="mt-16">
+        <Link to={token ? "/play" : "/login"} className="mt-16">
           <button className="btn btn-primary btn-glow">Enter Arena</button>
         </Link>
       </div>

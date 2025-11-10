@@ -11,7 +11,7 @@ const languageMap = { javascript:63, python:71, cpp:54, c:50, java:62 };
 
 // Local problem list to rotate to a "next" problem
 const LOCAL_PROBLEMS = [
-  { id: "factorial-5", title: "Factorial of 5", description: "Return factorial(5).", expectedOutput: "120", difficulty: "Easy" },
+  { id: "factorial-n", title: "Factorial of n", description: "Return factorial(n).", expectedOutput: "", difficulty: "Easy" },
   { id: "reverse-hello", title: "Reverse 'hello'", description: "Print the reverse of the string 'hello'.", expectedOutput: "olleh", difficulty: "Easy" },
   { id: "fib-10", title: "10th Fibonacci", description: "Print the 10th Fibonacci number (0-indexed: F0=0, F1=1).", expectedOutput: "55", difficulty: "Medium" },
 ];
@@ -61,7 +61,7 @@ export default function Room() {
 
   // problem from matchmaking or fallback
   const stored = sessionStorage.getItem("MM_PROBLEM");
-  const fallback = { title:"Factorial of 5", description:"Return factorial(5).", expectedOutput:"120" };
+  const fallback = { id:"factorial-n", title:"Factorial of n", description:"Return factorial(n).", expectedOutput:"", difficulty:"Easy" };
   const [problem, setProblem] = useState(stored ? JSON.parse(stored) : fallback);
 
   useEffect(() => {
@@ -138,11 +138,26 @@ export default function Room() {
             <div className="pill"><span className="label">MODE</span><span className="value">1v1</span></div>
           </div>
           <div className="profile">
-            <button className="avatar" onClick={()=>setMenuOpen(v=>!v)}>MM</button>
+            <button className="avatar" onClick={()=>setMenuOpen(v=>!v)}>{(me?.username ? me.username.slice(0,2) : 'MM').toUpperCase()}</button>
             {menuOpen && (
               <div className="menu">
-                <button onClick={()=>{ navigate('/home'); setMenuOpen(false); }}>Profile</button>
-                <button onClick={()=>{ localStorage.removeItem('token'); navigate('/login'); }}>Logout</button>
+                {me ? (
+                  <div style={{padding:"10px 12px", borderBottom:"1px solid #262645", marginBottom:6}}>
+                    <div style={{fontWeight:700}}>@{me.username}</div>
+                    <div style={{opacity:.85, fontSize:12, marginTop:4}}>Rank {me.rank} • {me.points} pts</div>
+                    <div style={{opacity:.7, fontSize:12}}>Rating {me.rating} • W {me.wins} / L {me.losses}</div>
+                  </div>
+                ) : (
+                  <div style={{padding:"10px 12px", borderBottom:"1px solid #262645", marginBottom:6, opacity:.85}}>Not logged in</div>
+                )}
+                {me ? (
+                  <>
+                    <button onClick={()=>{ navigate('/home'); setMenuOpen(false); }}>Profile</button>
+                    <button onClick={()=>{ localStorage.removeItem('token'); navigate('/login'); }}>Logout</button>
+                  </>
+                ) : (
+                  <button onClick={()=>{ navigate('/login'); setMenuOpen(false); }}>Login</button>
+                )}
               </div>
             )}
           </div>
@@ -172,7 +187,7 @@ export default function Room() {
                   const langId = languageMap[language];
                   let correct = false; let passed=0; let total=0;
                   // SUBMIT: run full tests when supported; otherwise fall back to stdout compare
-                  if ((language === "javascript" || language === "python") && problem.id === "factorial-5"){
+                  if ((language === "javascript" || language === "python") && (problem.id === "factorial-n" || problem.id === "factorial-5")){
                     const r = await axios.post(`${API_URL}/runProblem`, { code, language_id: langId, problemId: problem.id }, { headers:{"Content-Type":"application/json"} });
                     if (!r.data?.error){ passed = r.data.passed; total = r.data.total; correct = passed === total; }
                     const lines = (r.data?.results||[]).map(x=>`${x.pass?"✅":"❌"} input=${x.input} expected=${x.expected} got=${x.got}`).join("\n");

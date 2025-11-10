@@ -42,7 +42,7 @@ async function ensureSeedProblems(){
   const count = await Problem.countDocuments();
   if (count > 0) return;
   await Problem.insertMany([
-    { slug: "factorial-5", title: "Factorial of 5", description: "Return factorial(5).", expectedOutput: "120", difficulty: "Easy" },
+    { slug: "factorial-n", title: "Factorial of n", description: "Return factorial(n).", expectedOutput: "", difficulty: "Easy" },
     { slug: "reverse-hello", title: "Reverse 'hello'", description: "Print the reverse of the string 'hello'.", expectedOutput: "olleh", difficulty: "Easy" },
     { slug: "fib-10", title: "10th Fibonacci", description: "Print the 10th Fibonacci number (0-indexed: F0=0, F1=1).", expectedOutput: "55", difficulty: "Medium" },
   ]);
@@ -71,11 +71,11 @@ const roomMatches = new Map(); // roomId -> { rounds: { [userId]: { [round]: { a
 // --- Simple problem pool (can move to Mongo later)
 const PROBLEMS = [
   {
-    id: "factorial-5",
-    title: "Factorial of 5",
+    id: "factorial-n",
+    title: "Factorial of n",
     difficulty: "Easy",
-    description: "Write a function that returns factorial(5).",
-    expectedOutput: "120",
+    description: "Write a function solve(n) that returns n! (factorial of n).",
+    expectedOutput: "",
     languageHints: {
       javascript: `function factorial(n){ if(n===0) return 1; return n*factorial(n-1); }
 console.log(factorial(5));`,
@@ -146,8 +146,8 @@ io.on("connection", (socket) => {
       s1?.join(roomId);
       s2?.join(roomId);
 
-      if (s1) io.to(p1.socketId).emit("match_found", { roomId, problem: { id: "factorial-5", title: "Factorial of 5", description: "Return factorial(5).", expectedOutput: "120" } });
-      if (s2) io.to(p2.socketId).emit("match_found", { roomId, problem: { id: "factorial-5", title: "Factorial of 5", description: "Return factorial(5).", expectedOutput: "120" } });
+      if (s1) io.to(p1.socketId).emit("match_found", { roomId, problem: { id: "factorial-n", title: "Factorial of n", description: "Return factorial(n).", expectedOutput: "" } });
+      if (s2) io.to(p2.socketId).emit("match_found", { roomId, problem: { id: "factorial-n", title: "Factorial of n", description: "Return factorial(n).", expectedOutput: "" } });
       console.log(" match_found ->", roomId, p1.socketId, p2.socketId);
     } else {
       waiting = { socketId: socket.id, user: socket.data.user };
@@ -303,8 +303,8 @@ function buildSource(language_id, userCode, inputs){
 
 app.post("/runProblem", async (req,res)=>{
   const { code, language_id, problemId } = req.body;
-  const pid = problemId || 'factorial-5';
-  if (pid !== 'factorial-5') return res.status(400).json({ error: 'Unknown problem' });
+  const pid = problemId || 'factorial-n';
+  if (!['factorial-n','factorial-5'].includes(pid)) return res.status(400).json({ error: 'Unknown problem' });
 
   const source = buildSource(language_id, code, FACT_TESTS.inputs);
   if (!source) return res.status(400).json({ error: 'Tests currently supported for JavaScript and Python only' });

@@ -97,18 +97,29 @@ export default function Play() {
           {me && (
             <div className="pill">Tier <span className="value">{me.rank}</span> • <span className="value">{me.points}</span> pts</div>
           )}
-          <Link className="navlink" to="/profile">Profile</Link>
-          <Link className="navlink" to="/achievements">Achievements</Link>
-          <Link className="navlink" to="/leaderboard">Leaderboard</Link>
-          <div className="profile">
-            <button className="avatar" onClick={() => setMenuOpen((v) => !v)}>MM</button>
-            {menuOpen && (
-              <div className="menu">
-                <button onClick={() => { setMenuOpen(false); navigate('/profile'); }}>Open Profile</button>
-                <button onClick={() => { localStorage.removeItem("token"); navigate("/login"); }}>Logout</button>
+          {me ? (
+            <>
+              <Link className="navlink" to="/profile">Profile</Link>
+              <Link className="navlink" to="/achievements">Achievements</Link>
+              <Link className="navlink" to="/leaderboard">Leaderboard</Link>
+              <div className="profile">
+                <button className="avatar" onClick={() => setMenuOpen((v) => !v)}>{(me?.username ? me.username.slice(0,2) : 'MM').toUpperCase()}</button>
+                {menuOpen && (
+                  <div className="menu">
+                    <div style={{padding:"10px 12px", borderBottom:"1px solid #262645", marginBottom:6}}>
+                      <div style={{fontWeight:700}}>@{me.username}</div>
+                      <div style={{opacity:.85, fontSize:12, marginTop:4}}>Rank {me.rank} • {me.points} pts</div>
+                      <div style={{opacity:.7, fontSize:12}}>Rating {me.rating} • W {me.wins} / L {me.losses}</div>
+                    </div>
+                    <button onClick={() => { setMenuOpen(false); navigate('/profile'); }}>Open Profile</button>
+                    <button onClick={() => { localStorage.removeItem("token"); navigate("/login"); }}>Logout</button>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </>
+          ) : (
+            <Link className="navlink" to="/login">Login</Link>
+          )}
         </div>
       </div>
 
