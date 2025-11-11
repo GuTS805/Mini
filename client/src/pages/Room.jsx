@@ -130,7 +130,7 @@ export default function Room() {
   return (
     <div className="arena">
       <header className="nav">
-        <div className="brand"><span className="dot" /> MINDMASH</div>
+        <Link to="/" className="brand"><img src="/mindmash-logo.png" alt="Mindmash" className="logo" /><span className="brand-text">MINDMASH</span></Link>
         <div className="right">
           <div className="stats">
             <div className="pill"><span className="label">ROOM</span><span className="value">#{id?.toUpperCase()}</span></div>

@@ -92,7 +92,7 @@ export default function Play() {
     <div className="screen" style={{ position: "relative" }}>
       {/* Topbar with profile at right */}
       <div className="topbar" style={{ position: "absolute", top: 0, left: 0, right: 0 }}>
-        <div className="brand"><span className="dot" /> MINDMASH</div>
+        <Link to="/" className="brand"><img src="/mindmash-logo.png" alt="Mindmash" className="logo" /><span className="brand-text">MINDMASH</span></Link>
         <div className="navlinks">
           {me && (
             <div className="pill">Tier <span className="value">{me.rank}</span> • <span className="value">{me.points}</span> pts</div>
@@ -123,32 +123,66 @@ export default function Play() {
         </div>
       </div>
 
-      {/* Center main card */}
-      <div className="card glass neon" style={{ width: 420, textAlign: "center" }}>
-        <h1 className="h-hero title-hero glow">Enter Arena</h1>
+      <div style={{ width: 'min(1100px, 96%)' }}>
+        <h1 className="h-hero title-hero glow" style={{ margin: '0 0 12px 0', textAlign:'left' }}>ENTER ARENA</h1>
+        <div className="arena-grid">
+          <div className="stack-16">
+            <div className="card glass neon" style={{ width:'100%' }}>
+              <div className="stack-12" style={{ maxWidth: 480 }}>
+                <input
+                  className="field"
+                  placeholder="Enter Room Code"
+                  value={roomCode}
+                  onChange={(e) => setRoomCode(e.target.value)}
+                />
+                <button className="btn btn-primary btn-glow w-100" onClick={joinRoom}>Join Room</button>
+              </div>
+            </div>
+            <div className="card glass" style={{ width:'100%' }}>
+              <div className="stack-12" style={{ maxWidth: 480 }}>
+                <button className="btn btn-accent w-100" onClick={createRoom}>Create New Room 🔥</button>
+                {status === "idle" && (
+                  <button className="btn btn-success w-100" onClick={findMatch}>🔎 Find Match</button>
+                )}
+                {status !== "idle" && (
+                  <button className="btn btn-muted w-100" onClick={cancelMatch}>
+                    {status === "matching" ? "Finding Opponent..." : "Cancel"}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
 
-        <div className="stack-12">
-          <input
-            className="field"
-            placeholder="Enter Room Code"
-            value={roomCode}
-            onChange={(e) => setRoomCode(e.target.value)}
-          />
-          <button className="btn btn-primary btn-glow w-100" onClick={joinRoom}>Join Room</button>
+          <div className="card glass streak-card">
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <div>
+                <div style={{ fontWeight:800, fontSize:18 }}>Streak Flame</div>
+                <div className="h-sub" style={{ fontSize:13, marginTop:4 }}>Ignite your daily coding streak!</div>
+              </div>
+              <div className="pill ok">Streak <span className="value">{me?.streak || 0}</span> days</div>
+            </div>
 
-          <div className="hr" />
+            <div className="streak-days">
+              {Array.from({ length: 5 }).map((_, i) => {
+                const dayOn = (me?.streak || 0) > i;
+                return <div key={i} className={"streak-day" + (dayOn ? " on" : "")}>{i+1}</div>;
+              })}
+            </div>
 
-          <button className="btn btn-accent w-100" onClick={createRoom}>Create New Room 🔥</button>
+            <div className="mini-calendar">
+              <div className="cal-head">This Week</div>
+              <div className="cal-grid">
+                {['S','M','T','W','T','F','S'].map((d, i) => {
+                  const today = new Date();
+                  const idx = today.getDay();
+                  const isToday = i === idx;
+                  return <div key={i} className={"cal-cell" + (isToday ? " today" : "")}>{d}</div>;
+                })}
+              </div>
+            </div>
 
-          {status === "idle" && (
-            <button className="btn btn-success w-100" onClick={findMatch}>🔎 Find Match</button>
-          )}
-
-          {status !== "idle" && (
-            <button className="btn btn-muted w-100" onClick={cancelMatch}>
-              {status === "matching" ? "Finding Opponent..." : "Cancel"}
-            </button>
-          )}
+            <button className="btn btn-muted w-100 mt-16">What is a streak flame?</button>
+          </div>
         </div>
       </div>
 
