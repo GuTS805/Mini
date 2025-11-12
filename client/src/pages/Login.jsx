@@ -2,7 +2,7 @@ import { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 
-const API_URL = "http://localhost:5000";
+const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "");
 
 export default function Login() {
   const navigate = useNavigate();
@@ -14,14 +14,22 @@ export default function Login() {
     try {
       const res = await axios.post(`${API_URL}/auth/login`, { email, password });
       localStorage.setItem("token", res.data.token);
-      navigate("/play");
+      navigate("/home");
     } catch (err) {
       setError(err.response?.data?.error || "Login failed");
     }
   };
 
   return (
-    <div className="login-screen">
+    <div className="login-screen" style={{ position:'relative' }}>
+
+      <div className="topbar" style={{ position:'absolute', top:0, left:0, right:0 }}>
+        <Link to="/" className="brand"><img src="/mindmash-logo.png" alt="Mindmash" className="logo" /><span className="brand-text">MINDMASH</span></Link>
+        <div className="navlinks">
+          <Link className="navlink" to="/signup">Sign up</Link>
+          <Link className="navlink" to="/home">Home</Link>
+        </div>
+      </div>
 
       <div className="login-card">
         <div className="neon-orb">⚡</div>

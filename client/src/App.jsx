@@ -8,21 +8,22 @@ import Play from "./pages/Play";
 import Profile from "./pages/profile";
 import Achievements from "./pages/Achievements";
 import Leaderboard from "./pages/Leaderboard";
+import Tier from "./pages/Tier";
 
-function PublicOnly({ children }){
+function PublicOnly({ children }) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   if (token) return <Navigate to="/home" replace />;
   return children;
 }
 
-function RootRedirect(){
+function RootRedirect() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   return <Navigate to={token ? "/home" : "/login"} replace />;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "https://mini-8.onrender.com/";
 
-function RequireAuth({ children }){
+function RequireAuth({ children }) {
   const location = useLocation();
   const [ready, setReady] = useState(false);
   const [ok, setOk] = useState(false);
@@ -39,7 +40,7 @@ function RequireAuth({ children }){
       .catch(() => { localStorage.removeItem('token'); setOk(false); setReady(true); });
   }, [token]);
 
-  if (!ready) return <div className="screen page" style={{display:'flex',alignItems:'center',justifyContent:'center'}}>Checking session…</div>;
+  if (!ready) return <div className="screen page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Checking session…</div>;
   if (!ok) return <Navigate to="/login" replace state={{ from: location }} />;
   return children;
 }
@@ -64,6 +65,7 @@ export default function App() {
       <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
       <Route path="/achievements" element={<RequireAuth><Achievements /></RequireAuth>} />
       <Route path="/leaderboard" element={<RequireAuth><Leaderboard /></RequireAuth>} />
+      <Route path="/tier" element={<RequireAuth><Tier /></RequireAuth>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

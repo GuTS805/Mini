@@ -1,9 +1,10 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "");
 
 export default function Home() {
+  const navigate = useNavigate();
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const [me, setMe] = useState(null);
 
@@ -12,7 +13,7 @@ export default function Home() {
     fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.ok ? r.json() : null)
       .then(d => d && setMe(d))
-      .catch(() => {});
+      .catch(() => { });
   }, [token]);
 
   const mockStats = { active: 1284, matchesToday: 342, problems: 37 };
@@ -32,7 +33,24 @@ export default function Home() {
           {token && me && (
             <div className="pill">Tier <span className="value">{me.rank}</span> • <span className="value">{me.points}</span> pts</div>
           )}
-          {!token && <Link className="navlink" to="/login">Login</Link>}
+          {token ? (
+            <>
+              <Link className="navlink" to="/home">Home</Link>
+              <Link className="navlink" to="/play">Play</Link>
+              <Link className="navlink" to="/leaderboard"><img src="/5th.png" alt="" className="nav-ico" />Leaderboard</Link>
+              <Link className="navlink" to="/achievements">Achievements</Link>
+              <Link className="navlink" to="/tier">Tier</Link>
+              <Link className="navlink" to="/profile">Profile</Link>
+              <button className="navlink logout" onClick={() => { localStorage.removeItem('token'); navigate('/login'); }}>Logout</button>
+            </>
+          ) : (
+            <>
+              <Link className="navlink" to="/login">Login</Link>
+              <Link className="navlink" to="/signup">Sign up</Link>
+              <Link className="navlink" to="/leaderboard">Leaderboard</Link>
+              <Link className="navlink" to="/tier">Tier</Link>
+            </>
+          )}
         </div>
       </div>
 
@@ -45,13 +63,14 @@ export default function Home() {
             <div className="stack-12" style={{ marginTop: 16 }}>
               <Link to={token ? "/play" : "/login"}><button className="btn btn-primary btn-glow">Enter Arena</button></Link>
               {!token && <Link to="/signup"><button className="btn btn-accent">Create Account</button></Link>}
+              <div className="hero-stats">
+                <div className="pill">Active <span className="value">{mockStats.active}</span></div>
+                <div className="pill ok">Matches Today <span className="value">{mockStats.matchesToday}</span></div>
+                <div className="pill">Problems <span className="value">{mockStats.problems}</span></div>
+              </div>
             </div>
           </div>
-          <div className="hero-stats">
-            <div className="pill">Active <span className="value">{mockStats.active}</span></div>
-            <div className="pill ok">Matches Today <span className="value">{mockStats.matchesToday}</span></div>
-            <div className="pill">Problems <span className="value">{mockStats.problems}</span></div>
-          </div>
+          <img src="/berserk_no_bg.png" alt="" className="hero-art" />
         </section>
 
         {/* Features */}
@@ -59,6 +78,16 @@ export default function Home() {
           <div className="card glass"><h3>⚡ Real-time 1v1</h3><p>Instant matchmaking with Socket.IO and a 3-round scoring system.</p></div>
           <div className="card glass"><h3>🧠 Language Support</h3><p>Judge0-powered runs with local JS fast path for speed and reliability.</p></div>
           <div className="card glass"><h3>🏅 Ranks & Streaks</h3><p>Earn points, rank up, and keep your daily streak burning.</p></div>
+        </section>
+
+        {/* About */}
+        <section className="card glass" style={{ marginTop: 8 }}>
+          <h3 style={{ marginTop: 0 }}>About Mindmash</h3>
+          <p className="h-sub" style={{ marginTop: 6 }}>
+            Mindmash is a competitive coding arena where you battle head‑to‑head in fast, fair 1v1 matches. Our goal is to make practicing algorithms fun and addictive—
+            match instantly, solve problems under pressure, track your progress with ranks and streaks, and climb the leaderboard. Whether you’re sharpening skills for interviews
+            or just love a challenge, Mindmash turns daily practice into a game.
+          </p>
         </section>
 
         <div className="home-grid">
@@ -77,24 +106,43 @@ export default function Home() {
             <Link to="/leaderboard"><button className="btn btn-muted w-100 mt-16">Open Leaderboard</button></Link>
           </section>
 
-          {/* Streak teaser */}
-          <section className="card glass streak-card">
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-              <div>
-                <div style={{ fontWeight:800, fontSize:18 }}>Keep your flame alive</div>
-                <div className="h-sub" style={{ fontSize:13, marginTop:4 }}>Log in daily to grow your streak.</div>
-              </div>
-              <div className="pill ok">Streak <span className="value">{me?.streak || 0}</span> days</div>
-            </div>
-            <div className="streak-days">
-              {Array.from({ length: 5 }).map((_, i) => {
-                const dayOn = (me?.streak || 0) > i;
-                return <div key={i} className={'streak-day' + (dayOn ? ' on' : '')}>{i + 1}</div>;
-              })}
-            </div>
-            <Link to="/play"><button className="btn btn-primary w-100">Play Now</button></Link>
+          {/* Right image card */}
+          <section className="card glass">
+            <img src="/2nd.png" alt="" className="grid-art" />
+          </section>
+
+          {/* Far-right image card */}
+          <section className="card glass">
+            <img src="/3rd.png" alt="" className="grid-art" />
           </section>
         </div>
+        {/* Footer */}
+        <footer className="footer">
+          <div className="footer-inner">
+            <div className="footer-cols">
+              <div>
+                <div className="foot-head">Contact Information</div>
+                <div className="foot-item" style={{ fontWeight: 800 }}>⚡ Mindmash Support HQ</div>
+                <div className="foot-item">Got issues? Found a bug? Want to collaborate?</div>
+                <div className="foot-item" style={{ marginTop: 8 }}>📧 Mail us: <a href="mailto:support@mindmash.tech" style={{ color: 'var(--ink)', textDecoration: 'none' }}>support@mindmash.tech</a></div>
+                <div className="foot-item">🌍 Website: <a href="https://www.mindmash.tech" target="_blank" rel="noreferrer" style={{ color: 'var(--ink)', textDecoration: 'none' }}>www.mindmash.tech</a></div>
+              </div>
+
+              <div>
+                <div className="foot-head">Navigate</div>
+                <div className="foot-links">
+                  <Link to="/home">Home</Link>
+                  <Link to="/play">Play</Link>
+                  <Link to="/leaderboard">Leaderboard</Link>
+                  <Link to="/tier">Tier</Link>
+                  <Link to="/achievements">Achievements</Link>
+                  <Link to="/profile">Profile</Link>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="foot-bottom">© {new Date().getFullYear()} Mindmash. All rights reserved.</div>
+        </footer>
       </div>
     </div>
   );

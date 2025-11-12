@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "https://mini-8.onrender.com/";
 
-export default function Profile(){
+export default function Profile() {
+  const navigate = useNavigate();
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const [me, setMe] = useState(null);
   const [err, setErr] = useState("");
@@ -24,11 +25,11 @@ export default function Profile(){
   const weeks = 28;
   const days = 5; // Mon-Fri display
   const heat = Array.from({ length: days }, (_, r) => (
-    Array.from({ length: weeks }, (_, c) => ((r*weeks+c+7) % 9))
+    Array.from({ length: weeks }, (_, c) => ((r * weeks + c + 7) % 9))
   ));
 
   return (
-    <div className="screen page" style={{ position: 'relative', alignItems:'flex-start' }}>
+    <div className="screen page" style={{ position: 'relative', alignItems: 'flex-start' }}>
       <div className="topbar" style={{ position: 'absolute', top: 0, left: 0, right: 0 }}>
         <Link to="/" className="brand"><img src="/mindmash-logo.png" alt="Mindmash" className="logo" /><span className="brand-text">MINDMASH</span></Link>
         <div className="navlinks">
@@ -37,7 +38,9 @@ export default function Profile(){
           )}
           <Link className="navlink" to="/home">Home</Link>
           <Link className="navlink" to="/achievements">Achievements</Link>
-          <Link className="navlink" to="/leaderboard">Leaderboard</Link>
+          <Link className="navlink" to="/leaderboard"><img src="/5th.png" alt="" className="nav-ico" />Leaderboard</Link>
+          <Link className="navlink" to="/tier">Tier</Link>
+          {token && <button className="navlink logout" onClick={() => { localStorage.removeItem('token'); navigate('/login'); }}>Logout</button>}
         </div>
       </div>
 
@@ -45,11 +48,11 @@ export default function Profile(){
         {/* Left column */}
         <section className="card glass">
           <div className="stack-12">
-            <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-              <div className="avatar" style={{ width:56, height:56, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900 }}> {(me?.username || 'MM').slice(0,2).toUpperCase()} </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div className="avatar" style={{ width: 56, height: 56, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}> {(me?.username || 'MM').slice(0, 2).toUpperCase()} </div>
               <div>
-                <div style={{ fontWeight:900, fontSize:20 }}>{me?.username || 'Player'}</div>
-                <div className="h-sub" style={{ fontSize:13 }}>@{me?.username || 'user'} • Rank {me?.rank || 'Bronze'}</div>
+                <div style={{ fontWeight: 900, fontSize: 20 }}>{me?.username || 'Player'}</div>
+                <div className="h-sub" style={{ fontSize: 13 }}>@{me?.username || 'user'} • Rank {me?.rank || 'Bronze'}</div>
               </div>
             </div>
 
@@ -65,7 +68,7 @@ export default function Profile(){
               {heat.map((row, r) => (
                 <div className="heat-row" key={r}>
                   {row.map((v, c) => (
-                    <div key={c} className="heat-cell" style={{ opacity: 0.2 + (v/9)*0.8 }} />
+                    <div key={c} className="heat-cell" style={{ opacity: 0.2 + (v / 9) * 0.8 }} />
                   ))}
                 </div>
               ))}
@@ -77,13 +80,13 @@ export default function Profile(){
         <section className="right-col">
           <div className="card glass">
             <div className="card-subhead">Skill tests</div>
-            <div className="h-sub" style={{fontSize:13}}>Build a strong profile by taking skill tests.</div>
+            <div className="h-sub" style={{ fontSize: 13 }}>Build a strong profile by taking skill tests.</div>
             <button className="btn btn-muted w-100 mt-16">View skill tests</button>
           </div>
 
           <div className="card glass">
             <div className="card-subhead">Badges</div>
-            <div className="h-sub" style={{fontSize:13}}>No badges yet.</div>
+            <div className="h-sub" style={{ fontSize: 13 }}>No badges yet.</div>
           </div>
         </section>
       </div>

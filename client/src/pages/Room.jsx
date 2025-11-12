@@ -1,13 +1,15 @@
 import axios from "axios";
-import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { io } from "socket.io-client";
-import Editor from "@monaco-editor/react";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
+// Lazy load Monaco editor to avoid runtime crashes when the module isn’t ready
+const MonacoEditor = lazy(() => import("@monaco-editor/react"));
 
-const languageMap = { javascript:63, python:71, cpp:54, c:50, java:62 };
+const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "");
+const SOCKET_URL = (import.meta.env.VITE_SOCKET_URL || "http://localhost:5000").replace(/\/$/, "");
+
+const languageMap = { javascript: 63, python: 71, cpp: 54, c: 50, java: 62 };
 
 // Local problem list to rotate to a "next" problem
 const LOCAL_PROBLEMS = [
@@ -54,24 +56,24 @@ export default function Room() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) return;
-    axios.get(`${API_URL}/me`, { headers:{ Authorization: `Bearer ${token}` }})
+    axios.get(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => setMe(r.data))
-      .catch(()=>{});
+      .catch(() => { });
   }, []);
 
   // problem from matchmaking or fallback
   const stored = sessionStorage.getItem("MM_PROBLEM");
-  const fallback = { id:"factorial-n", title:"Factorial of n", description:"Return factorial(n).", expectedOutput:"", difficulty:"Easy" };
+  const fallback = { id: "factorial-n", title: "Factorial of n", description: "Return factorial(n).", expectedOutput: "", difficulty: "Easy" };
   const [problem, setProblem] = useState(stored ? JSON.parse(stored) : fallback);
 
   useEffect(() => {
     const s = io(SOCKET_URL);
     setSocket(s);
     s.emit("join_room", id);
-    s.on("player_joined", ()=> setOpponent(true));
+    s.on("player_joined", () => setOpponent(true));
     // Legacy single-attempt events kept but we won't use them for round wins
-    s.on("opponent_won", ()=> {});
-    s.on("winner_confirmed", ()=> {});
+    s.on("opponent_won", () => { });
+    s.on("winner_confirmed", () => { });
     // Final match result after 3 rounds
     s.on("match_over", (payload) => {
       const myId = me?._id;
@@ -79,14 +81,14 @@ export default function Room() {
       if (payload.winner === null) { setStatus(""); return; }
       setStatus(payload.winner === myId ? "WIN" : "LOSE");
     });
-    return ()=> { s.close(); };
+    return () => { s.close(); };
   }, [id, me]);
 
   const runCode = async () => {
     try {
       const langId = languageMap[language];
       // RUN: execute code and show stdout vs expected
-      const res = await axios.post(`${API_URL}/run`, { code, language_id: langId }, { headers:{ "Content-Type":"application/json" } });
+      const res = await axios.post(`${API_URL}/run`, { code, language_id: langId }, { headers: { "Content-Type": "application/json" } });
       const stdout = String((res.data?.output ?? "")).trim();
       const expected = String(problem.expectedOutput ?? "");
       const match = stdout === expected;
@@ -101,25 +103,25 @@ export default function Room() {
 
   // Run terminal: invoke solve(n) and print value
   const runTerminal = async () => {
-    try{
+    try {
       setTermBusy(true);
       setTermOut("");
       const n = Number(termN);
       const langId = languageMap[language];
-      if (language === "javascript"){
-        const src = `${code}\ntry { console.log(String(solve(${Number.isFinite(n)?n:0}))); } catch(e){ console.log("__ERROR__"); }`;
-        const r = await axios.post(`${API_URL}/run`, { code: src, language_id: langId }, { headers:{"Content-Type":"application/json"} });
+      if (language === "javascript") {
+        const src = `${code}\ntry { console.log(String(solve(${Number.isFinite(n) ? n : 0}))); } catch(e){ console.log("__ERROR__"); }`;
+        const r = await axios.post(`${API_URL}/run`, { code: src, language_id: langId }, { headers: { "Content-Type": "application/json" } });
         setTermOut(String(r.data?.output ?? "").trim());
         return;
       }
-      if (language === "python"){
-        const src = `${code}\ntry:\n  print(str(solve(${Number.isFinite(n)?n:0})))\nexcept Exception as e:\n  print('__ERROR__')\n`;
-        const r = await axios.post(`${API_URL}/run`, { code: src, language_id: langId }, { headers:{"Content-Type":"application/json"} });
+      if (language === "python") {
+        const src = `${code}\ntry:\n  print(str(solve(${Number.isFinite(n) ? n : 0})))\nexcept Exception as e:\n  print('__ERROR__')\n`;
+        const r = await axios.post(`${API_URL}/run`, { code: src, language_id: langId }, { headers: { "Content-Type": "application/json" } });
         setTermOut(String(r.data?.output ?? "").trim());
         return;
       }
       setTermOut("Terminal supports JavaScript and Python only for now.");
-    } catch(e){
+    } catch (e) {
       const msg = e?.response?.data?.output || e?.response?.data?.message || e?.message || "⚠ Server Execution Error";
       setTermOut(String(msg));
     } finally {
@@ -134,29 +136,29 @@ export default function Room() {
         <div className="right">
           <div className="stats">
             <div className="pill"><span className="label">ROOM</span><span className="value">#{id?.toUpperCase()}</span></div>
-            <div className={`pill ${opponent ? "ok":"warn"}`}><span className="label">OPPONENT</span><span className="value">{opponent?"JOINED":"WAITING..."}</span></div>
+            <div className={`pill ${opponent ? "ok" : "warn"}`}><span className="label">OPPONENT</span><span className="value">{opponent ? "JOINED" : "WAITING..."}</span></div>
             <div className="pill"><span className="label">MODE</span><span className="value">1v1</span></div>
           </div>
           <div className="profile">
-            <button className="avatar" onClick={()=>setMenuOpen(v=>!v)}>{(me?.username ? me.username.slice(0,2) : 'MM').toUpperCase()}</button>
+            <button className="avatar" onClick={() => setMenuOpen(v => !v)}>{(me?.username ? me.username.slice(0, 2) : 'MM').toUpperCase()}</button>
             {menuOpen && (
               <div className="menu">
                 {me ? (
-                  <div style={{padding:"10px 12px", borderBottom:"1px solid #262645", marginBottom:6}}>
-                    <div style={{fontWeight:700}}>@{me.username}</div>
-                    <div style={{opacity:.85, fontSize:12, marginTop:4}}>Rank {me.rank} • {me.points} pts</div>
-                    <div style={{opacity:.7, fontSize:12}}>Rating {me.rating} • W {me.wins} / L {me.losses}</div>
+                  <div style={{ padding: "10px 12px", borderBottom: "1px solid #262645", marginBottom: 6 }}>
+                    <div style={{ fontWeight: 700 }}>@{me.username}</div>
+                    <div style={{ opacity: .85, fontSize: 12, marginTop: 4 }}>Rank {me.rank} • {me.points} pts</div>
+                    <div style={{ opacity: .7, fontSize: 12 }}>Rating {me.rating} • W {me.wins} / L {me.losses}</div>
                   </div>
                 ) : (
-                  <div style={{padding:"10px 12px", borderBottom:"1px solid #262645", marginBottom:6, opacity:.85}}>Not logged in</div>
+                  <div style={{ padding: "10px 12px", borderBottom: "1px solid #262645", marginBottom: 6, opacity: .85 }}>Not logged in</div>
                 )}
                 {me ? (
                   <>
-                    <button onClick={()=>{ navigate('/home'); setMenuOpen(false); }}>Profile</button>
-                    <button onClick={()=>{ localStorage.removeItem('token'); navigate('/login'); }}>Logout</button>
+                    <button onClick={() => { navigate('/home'); setMenuOpen(false); }}>Profile</button>
+                    <button onClick={() => { localStorage.removeItem('token'); navigate('/login'); }}>Logout</button>
                   </>
                 ) : (
-                  <button onClick={()=>{ navigate('/login'); setMenuOpen(false); }}>Login</button>
+                  <button onClick={() => { navigate('/login'); setMenuOpen(false); }}>Login</button>
                 )}
               </div>
             )}
@@ -168,11 +170,11 @@ export default function Room() {
         <section className="left">
           <div className="card">
             <h2>⚔ {problem.title}</h2>
-            <p style={{opacity:.85}}>{problem.description}</p>
+            <p style={{ opacity: .85 }}>{problem.description}</p>
 
-            <div style={{display:"flex",gap:8,marginTop:12}}>
-              <select value={language} onChange={(e)=>setLanguage(e.target.value)}
-                style={{background:"#0e0e18",color:"#fff",border:"1px solid #2a2845",padding:"8px 10px",borderRadius:6}}>
+            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+              <select value={language} onChange={(e) => setLanguage(e.target.value)}
+                style={{ background: "#0e0e18", color: "#fff", border: "1px solid #2a2845", padding: "8px 10px", borderRadius: 6 }}>
                 <option value="javascript">JavaScript</option>
                 <option value="python">Python</option>
                 <option value="cpp">C++</option>
@@ -180,31 +182,31 @@ export default function Room() {
                 <option value="java">Java</option>
               </select>
               <button className="btn-run" onClick={runCode}>▶ Run Code</button>
-              <button className="btn-run" disabled={submitting} onClick={async()=>{
+              <button className="btn-run" disabled={submitting} onClick={async () => {
                 setSubmitting(true);
                 const started = Date.now();
-                try{
+                try {
                   const langId = languageMap[language];
-                  let correct = false; let passed=0; let total=0;
+                  let correct = false; let passed = 0; let total = 0;
                   // SUBMIT: run full tests when supported; otherwise fall back to stdout compare
-                  if ((language === "javascript" || language === "python") && (problem.id === "factorial-n" || problem.id === "factorial-5")){
-                    const r = await axios.post(`${API_URL}/runProblem`, { code, language_id: langId, problemId: problem.id }, { headers:{"Content-Type":"application/json"} });
-                    if (!r.data?.error){ passed = r.data.passed; total = r.data.total; correct = passed === total; }
-                    const lines = (r.data?.results||[]).map(x=>`${x.pass?"✅":"❌"} input=${x.input} expected=${x.expected} got=${x.got}`).join("\n");
+                  if ((language === "javascript" || language === "python") && (problem.id === "factorial-n" || problem.id === "factorial-5")) {
+                    const r = await axios.post(`${API_URL}/runProblem`, { code, language_id: langId, problemId: problem.id }, { headers: { "Content-Type": "application/json" } });
+                    if (!r.data?.error) { passed = r.data.passed; total = r.data.total; correct = passed === total; }
+                    const lines = (r.data?.results || []).map(x => `${x.pass ? "✅" : "❌"} input=${x.input} expected=${x.expected} got=${x.got}`).join("\n");
                     setOutput(`Tests passed ${passed}/${total}\n${lines}`);
                   } else {
-                    const res = await axios.post(`${API_URL}/run`, { code, language_id: langId }, { headers:{"Content-Type":"application/json"} });
-                    const out = String((res.data.output||"").trim());
-                    const expected = String(problem.expectedOutput||"");
+                    const res = await axios.post(`${API_URL}/run`, { code, language_id: langId }, { headers: { "Content-Type": "application/json" } });
+                    const out = String((res.data.output || "").trim());
+                    const expected = String(problem.expectedOutput || "");
                     correct = out === expected;
                     passed = correct ? 1 : 0; total = 1;
-                    setOutput(`Program output: ${out||"<empty>"}\nExpected: ${expected}\nMatch: ${correct?"✅ yes":"❌ no"}`);
+                    setOutput(`Program output: ${out || "<empty>"}\nExpected: ${expected}\nMatch: ${correct ? "✅ yes" : "❌ no"}`);
                   }
 
                   const token = localStorage.getItem("token");
                   const durationMs = Date.now() - started;
-                  if (correct && token){
-                    try{
+                  if (correct && token) {
+                    try {
                       const resp = await axios.post(`${API_URL}/points/submit`, {
                         problemId: problem.id,
                         difficulty: problem.difficulty || "Easy",
@@ -213,40 +215,40 @@ export default function Room() {
                         durationMs,
                         firstTry: attempts === 0,
                         win: true,
-                      }, { headers:{ "Content-Type":"application/json", Authorization: `Bearer ${token}` } });
+                      }, { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } });
                       window.__mm_rankUp = !!resp.data?.rankUp;
                       window.__mm_newRank = resp.data?.rank || null;
-                    }catch{}
+                    } catch { }
                   }
 
-                  if (correct){
+                  if (correct) {
                     // Compute accuracy (passed/total) and emit round result; no per-problem WIN banner
                     const accuracy = total > 0 ? passed / total : 0;
                     const timeMs = durationMs;
-                    if (socket && me?._id){
+                    if (socket && me?._id) {
                       socket.emit("round_result", { roomId: id, userId: me._id, round, accuracy, timeMs });
                     }
 
-                    if (round < TOTAL_ROUNDS){
+                    if (round < TOTAL_ROUNDS) {
                       // Load next problem and advance round
                       let next = null;
-                      try{
-                        const nxt = await axios.get(`${API_URL}/problems/next`, { params:{ current: problem.id } });
+                      try {
+                        const nxt = await axios.get(`${API_URL}/problems/next`, { params: { current: problem.id } });
                         next = nxt.data;
-                      }catch{ next = nextProblemOf(problem.id); }
+                      } catch { next = nextProblemOf(problem.id); }
                       setProblem(next);
                       sessionStorage.setItem("MM_PROBLEM", JSON.stringify(next));
                       setOutput("");
                       setCode("");
                       setAttempts(0);
-                      setRound(r=>r+1);
+                      setRound(r => r + 1);
                     } else {
                       // Finished all rounds: wait for server match_over decision
-                      setOutput(prev => (prev?prev+"\n":"") + "All 3 rounds submitted. Waiting for opponent...");
+                      setOutput(prev => (prev ? prev + "\n" : "") + "All 3 rounds submitted. Waiting for opponent...");
                     }
                   } else {
                     setOutput(prev => prev + "\nNot correct. Use Run to debug and try Submit again.");
-                    setAttempts(a=>a+1);
+                    setAttempts(a => a + 1);
                   }
                 } finally {
                   setSubmitting(false);
@@ -262,11 +264,11 @@ export default function Room() {
 
           <div className="card">
             <div className="card-head">Terminal (solve(n))</div>
-            <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:8 }}>
-              <label style={{opacity:.85}}>n</label>
-              <input type="number" value={termN} onChange={(e)=>setTermN(e.target.value)}
-                style={{background:"#0e0e18",color:"#fff",border:"1px solid #2a2845",padding:"8px 10px",borderRadius:6, width:120}} />
-              <span style={{opacity:.6, fontSize:12}}>JS/Python supported • Terminal auto-runs on Run</span>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
+              <label style={{ opacity: .85 }}>n</label>
+              <input type="number" value={termN} onChange={(e) => setTermN(e.target.value)}
+                style={{ background: "#0e0e18", color: "#fff", border: "1px solid #2a2845", padding: "8px 10px", borderRadius: 6, width: 120 }} />
+              <span style={{ opacity: .6, fontSize: 12 }}>JS/Python supported • Terminal auto-runs on Run</span>
             </div>
             <pre className="console">{termOut || "Type n and press Run to execute solve(n)"}</pre>
           </div>
@@ -274,21 +276,23 @@ export default function Room() {
 
         <section className="right">
           <div className="editor-wrap">
-            <Editor
-              height="100%"
-              theme="vs-dark"
-              language={language}
-              value={code}
-              onChange={(v)=>setCode(v ?? "")}
-              options={{ minimap:{enabled:false}, fontSize:15 }}
-            />
+            <Suspense fallback={<div style={{padding:12, opacity:.85}}>Loading editor…</div>}>
+              <MonacoEditor
+                height="100%"
+                theme="vs-dark"
+                language={language}
+                value={code}
+                onChange={(v) => setCode(v ?? "")}
+                options={{ minimap: { enabled: false }, fontSize: 15 }}
+              />
+            </Suspense>
           </div>
         </section>
       </main>
 
       {status && (
-        <div className={`banner ${status.startsWith("RANKUP")?"win":(status==="WIN"?"win":"lose")}`}>
-          {status.startsWith("RANKUP") ? `⬆ Rank Up! ${status.split(":")[1]}` : (status==="WIN" ? "🏆 YOU WIN!" : "❌ YOU LOSE!")}
+        <div className={`banner ${status.startsWith("RANKUP") ? "win" : (status === "WIN" ? "win" : "lose")}`}>
+          {status.startsWith("RANKUP") ? `⬆ Rank Up! ${status.split(":")[1]}` : (status === "WIN" ? "🏆 YOU WIN!" : "❌ YOU LOSE!")}
         </div>
       )}
 

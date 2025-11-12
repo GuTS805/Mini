@@ -2,63 +2,70 @@ import { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 
-const API_URL = "http://localhost:5000";
+const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "");
 
 export default function Signup() {
-    const navigate = useNavigate();
-    const [username, setUsername] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
+  const navigate = useNavigate();
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-    const signupUser = async () => {
-        try {
-            const res = await axios.post(`${API_URL}/auth/signup`, {
-                username,
-                email,
-                password,
-            });
+  const signupUser = async () => {
+    try {
+      const res = await axios.post(`${API_URL}/auth/signup`, {
+        username,
+        email,
+        password,
+      });
 
-            localStorage.setItem("token", res.data.token);
-            navigate("/play");
-        } catch (err) {
-            setError(err.response?.data?.error || "Signup failed");
-        }
-    };
+      localStorage.setItem("token", res.data.token);
+      navigate("/home");
+    } catch (err) {
+      setError(err.response?.data?.error || "Signup failed");
+    }
+  };
 
-    return (
-        <div className="auth-wrapper">
-            <div className="auth-box">
-                <div className="logo-circle"></div>
+  return (
+    <div className="auth-wrapper" style={{ position:'relative' }}>
+      <div className="topbar" style={{ position:'absolute', top:0, left:0, right:0 }}>
+        <Link to="/" className="brand"><img src="/mindmash-logo.png" alt="Mindmash" className="logo" /><span className="brand-text">MINDMASH</span></Link>
+        <div className="navlinks">
+          <Link className="navlink" to="/login">Login</Link>
+          <Link className="navlink" to="/home">Home</Link>
+        </div>
+      </div>
+      <div className="auth-box">
+        <div className="logo-circle"></div>
 
-                <h2>Create Account</h2>
-                <p className="sub">
-                    Already registered? <Link to="/login">Login</Link>
-                </p>
+        <h2>Create Account</h2>
+        <p className="sub">
+          Already registered? <Link to="/login">Login</Link>
+        </p>
 
-                {error && <p className="err">{error}</p>}
+        {error && <p className="err">{error}</p>}
 
-                <input
-                    placeholder="Username"
-                    onChange={(e) => setUsername(e.target.value)}
-                />
+        <input
+          placeholder="Username"
+          onChange={(e) => setUsername(e.target.value)}
+        />
 
-                <input
-                    type="email"
-                    placeholder="Email Address"
-                    onChange={(e) => setEmail(e.target.value)}
-                />
+        <input
+          type="email"
+          placeholder="Email Address"
+          onChange={(e) => setEmail(e.target.value)}
+        />
 
-                <input
-                    type="password"
-                    placeholder="Password"
-                    onChange={(e) => setPassword(e.target.value)}
-                />
+        <input
+          type="password"
+          placeholder="Password"
+          onChange={(e) => setPassword(e.target.value)}
+        />
 
-                <button onClick={signupUser}>Create Account</button>
-            </div>
+        <button onClick={signupUser}>Create Account</button>
+      </div>
 
-            <style>{`
+      <style>{`
         .auth-wrapper {
           width: 100vw;
           height: 100vh;
@@ -158,6 +165,6 @@ export default function Signup() {
           to { opacity: 1; transform: scale(1); }
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 }
